@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+    <Blacklist timestamp="1545785824585"></Blacklist>
+    <Whitelist timestamp="1545785824580">
+        <ID>MatchingDeclarationName:Sequence.kt$com.molikuner.calk.Sequence.kt</ID>
+        <ID>ReturnCount:Formular.kt$private fun String.expression(replaces: Map&lt;String, BigDecimal&gt;): BigDecimal
+        </ID>
+        <ID>ReturnCount:Formular.kt$private fun String.term(replaces: Map&lt;String, BigDecimal&gt;): BigDecimal</ID>
+        <ID>TooGenericExceptionCaught:Main.kt$e: Exception</ID>
+        <ID>TooGenericExceptionCaught:Util.kt$e: Exception</ID>
+    </Whitelist>
+</SmellBaseline>

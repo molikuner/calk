@@ -1,6 +1,5 @@
 package com.molikuner.calk
 
-import com.molikuner.bigMath.pow
 import java.math.BigDecimal
 import kotlin.reflect.KClass
 
@@ -23,3 +22,7 @@ inline fun <R> simpleTry(
 }
 
 fun BigDecimal.power(y: BigDecimal) = this.pow(y)
+
+inline fun <K, V, R> Map<K, V>.mapValuesNotNull(transform: (Map.Entry<K, V>) -> R?): Map<K, R> {
+    return this.mapValues(transform).filterValues { it != null }.mapValues { it.value!! }
+}

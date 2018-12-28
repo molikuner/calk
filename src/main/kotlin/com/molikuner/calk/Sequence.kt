@@ -9,37 +9,48 @@ data class Value(
     val valName: String
 ) {
     companion object {
-        internal val FORMAT = """^[a-z]+\s*:?\s*(?:<\s*([0-9]+(?:\.[0-9]+)?)?\s*>)?(?:\s*=\s*(?:([0-9]+(?:\.[0-9]+)?)|.+))?$""".toRegex(RegexOption.IGNORE_CASE)
+        internal val FORMAT =
+            """^[a-z]+\s*(?:<\s*([0-9]+(?:\.[0-9]+)?)?\s*>)?\s*:?(?:\s*=\s*(?:([0-9]+(?:\.[0-9]+)?)|.*))?$"""
+                .toRegex(RegexOption.IGNORE_CASE)
     }
 }
 
 // x<5> is equal to x=5
-fun String.toValue(default: BigDecimal? = null): Value {
+fun String.toValue(default: BigDecimal? = null, overrideResult: String.(Value) -> Value = { it }): Value {
     val match = Value.FORMAT.matchEntire(this)?.groupValues
     if (match == null || ("<" !in this && "=" !in this))
         throw IllegalArgumentException("Can not parse '$this' as a value")
 
     return Value(
             currentVal = match.let { list ->
-                val definedValue = list[1].takeUnless { it.isEmpty() } ?: list[2].takeUnless { it.isEmpty() }
+                val definedValue = list[1].takeIf { it.isNotEmpty() } ?: list[2].takeIf { it.isNotEmpty() }
                 return@let definedValue?.let { BigDecimal(it.trim()) }
             } ?: default,
-            formula = this.split("=").getOrNull(1)?.trim(),
+        formula = this.split("=").getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() },
             print = this.contains(':'),
             valName = this.split("""[:<=]""".toRegex())[0].trim()
-    )
+    ).let {
+        return@let this.overrideResult(it)
+    }
 }
 
 fun String.sequent(
     times: Int,
-    default: BigDecimal?,
-    constants: Map<String, BigDecimal>
+    constants: Map<String, BigDecimal>,
+    askForValue: String.(Value) -> Value
 ) {
-    var values = this.split('|').map { it.trim().toValue(default) }.groupBy { it.valName }.mapValues { entry ->
+    // setup
+    var values = this
+        .split('|')
+        .map { it.trim().toValue(constants["DEFAULT"], askForValue) }
+        .groupBy { it.valName }
+        .mapValues { entry ->
         if (entry.value.size != 1) throw IllegalArgumentException("multiple definitions found for: '${entry.key}'")
         return@mapValues entry.value[0]
     }
     val printAnyways = ':' !in this
+
+    // sequent
     values.printKeys(printAnyways)
     values.printValues(0, printAnyways)
     for (i in 1 until times + 1) {
@@ -81,8 +92,4 @@ fun Map<String, Value>.printValues(num: Int, printAnyways: Boolean) {
 
 inline fun Map<String, Value>.print(num: String, transform: (Map.Entry<String, Value>) -> String?) {
     println("$num: " + this.mapNotNull(transform).joinToString(" | "))
-}
-
-inline fun <K, V, R> Map<K, V>.mapValuesNotNull(transform: (Map.Entry<K, V>) -> R?): Map<K, R> {
-    return this.mapValues(transform).filterValues { it != null }.mapValues { it.value!! }
 }
