@@ -1,12 +1,15 @@
 package com.molikuner.calk
 
 import com.molikuner.bigMath.factorial
+import com.molikuner.bigMath.pow
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 internal val numberRegex = """^[0-9]+(?:\.[0-9]*)?$""".toRegex()
 private val patternRegex = """^[-+]*\s*(?:[0-9.a-zA-Z]+'?|\(.+\)|)\s*!?$""".toRegex()
 private val replacementRegex = """^[a-z]+'?$""".toRegex(RegexOption.IGNORE_CASE)
 private val bracketRegex = """^\(.+\)$""".toRegex()
+private const val DEFAULT_ACCURACY = 100
 
 private inline fun String.parse(
     c: Char,
@@ -31,8 +34,12 @@ private fun String.term(replaces: Map<String, BigDecimal>): BigDecimal {
     fun String.on(c: Char, action: BigDecimal.(i: BigDecimal) -> BigDecimal) =
         if (this.contains(c)) simpleTry { this.parse(c, String::factor, String::term, replaces, action) } else null
 
+    fun BigDecimal.divisionBy(x: BigDecimal) = this.divide(x, replaces["DEFAULT"]?.intValueExact() ?: DEFAULT_ACCURACY, RoundingMode.HALF_UP)
+
+    fun BigDecimal.power(y: BigDecimal) = this.pow(y, replaces["DEFAULT"]?.intValueExact() ?: DEFAULT_ACCURACY)
+
     this.on('*', BigDecimal::multiply)?.also { return it }
-    this.on('/', BigDecimal::divide)?.also { return it }
+    this.on('/', BigDecimal::divisionBy)?.also { return it }
     this.on('^', BigDecimal::power)?.also { return it }
     this.on('%', BigDecimal::remainder)?.also { return it }
 
